@@ -116,6 +116,7 @@ cv::Mat findEssentialMat( cv::InputArray _points1, cv::InputArray _points2, doub
 
 }
 
+
 int recoverPose( const cv::Mat & E, cv::InputArray _points1, cv::InputArray _points2, cv::Mat & _R, cv::Mat & _t,
                     double focal, cv::Point2d pp,
                     cv::InputOutputArray _mask)
@@ -158,7 +159,7 @@ int recoverPose( const cv::Mat & E, cv::InputArray _points1, cv::InputArray _poi
 	// there depth may vary between postive and negtive. 
 	double dist = 50.0; 
     cv::Mat Q;
-	triangulatePoints(P0, P1, points1, points2, Q); 
+    cv::triangulatePoints(P0, P1, points1, points2, Q);
     cv::Mat mask1 = Q.row(2).mul(Q.row(3)) > 0;
 	Q.row(0) /= Q.row(3); 
 	Q.row(1) /= Q.row(3); 
@@ -169,7 +170,7 @@ int recoverPose( const cv::Mat & E, cv::InputArray _points1, cv::InputArray _poi
 	mask1 = (Q.row(2) > 0) & mask1; 
 	mask1 = (Q.row(2) < dist) & mask1; 
 
-	triangulatePoints(P0, P2, points1, points2, Q); 
+    cv::triangulatePoints(P0, P2, points1, points2, Q);
     cv::Mat mask2 = Q.row(2).mul(Q.row(3)) > 0;
 	Q.row(0) /= Q.row(3); 
 	Q.row(1) /= Q.row(3); 
@@ -180,7 +181,7 @@ int recoverPose( const cv::Mat & E, cv::InputArray _points1, cv::InputArray _poi
 	mask2 = (Q.row(2) > 0) & mask2; 
 	mask2 = (Q.row(2) < dist) & mask2; 
 
-	triangulatePoints(P0, P3, points1, points2, Q); 
+    cv::triangulatePoints(P0, P3, points1, points2, Q);
     cv::Mat mask3 = Q.row(2).mul(Q.row(3)) > 0;
 	Q.row(0) /= Q.row(3); 
 	Q.row(1) /= Q.row(3); 
@@ -191,7 +192,7 @@ int recoverPose( const cv::Mat & E, cv::InputArray _points1, cv::InputArray _poi
 	mask3 = (Q.row(2) > 0) & mask3; 
 	mask3 = (Q.row(2) < dist) & mask3; 
 
-	triangulatePoints(P0, P4, points1, points2, Q); 
+    cv::triangulatePoints(P0, P4, points1, points2, Q);
     cv::Mat mask4 = Q.row(2).mul(Q.row(3)) > 0;
 	Q.row(0) /= Q.row(3); 
 	Q.row(1) /= Q.row(3); 
