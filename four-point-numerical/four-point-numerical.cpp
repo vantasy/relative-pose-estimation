@@ -31,7 +31,6 @@
 #include "four-point-numerical-helper.hpp"
 #include "_modelest.h"
 
-using namespace cv; 
 
 void truncate(double & t)
 {
@@ -118,7 +117,7 @@ int four_point_fdf(const gsl_vector * t, void * ab, gsl_vector * f, gsl_matrix *
     return GSL_SUCCESS; 
 }
 
-void solve_roots(const vector<double> & a, const vector<double> & b, vector<double> & rx, vector<double> & ry, vector<double> & rz)
+void solve_roots(const cv::vector<double> & a, const cv::vector<double> & b, cv::vector<double> & rx, cv::vector<double> & ry, cv::vector<double> & rz)
 {
     int n_samples = 10; 
     int n_iters = 200; 
@@ -127,7 +126,7 @@ void solve_roots(const vector<double> & a, const vector<double> & b, vector<doub
     double same_root_threshold = 1e-2; 
 
     // Sample initial solutions
-    vector<double> t0_initial, t1_initial; 
+    cv::vector<double> t0_initial, t1_initial;
     for (double t0 = 0; t0 <= 1.0; t0 += 1.0 / (n_samples - 1.0))
         for (double t1 = 0; t1 <= 1.0; t1 += 1.0 / (n_samples - 1.0))
         {
@@ -224,7 +223,7 @@ void four_point_numerical(cv::InputArray _points1, cv::InputArray _points2,
                 double angle, double focal, cv::Point2d pp, 
                 cv::OutputArray _rvecs, cv::OutputArray _tvecs)
 {
-    Mat points1, points2; 
+    cv::Mat points1, points2;
 	_points1.getMat().copyTo(points1); 
 	_points2.getMat().copyTo(points2); 
 
@@ -258,10 +257,10 @@ void four_point_numerical(cv::InputArray _points1, cv::InputArray _points2,
     double k2 = 1.0 - k1; 
     double k3 = sin(angle); 
     
-    vector<double> a(56), b(56); 
+    cv::vector<double> a(56), b(56);
     four_point_get_ab(k1, k2, k3, x1, y1, x2, y2, &a[0],&b[0]); 
     
-    vector<double> rx, ry, rz; 
+    cv::vector<double> rx, ry, rz;
     solve_roots(a, b, rx, ry, rz); 
     
        
@@ -270,16 +269,16 @@ void four_point_numerical(cv::InputArray _points1, cv::InputArray _points2,
     _tvecs.create(3, n * 2, CV_64F, -1, true); 
 
     double m[12]; 
-    Mat M(4, 3, CV_64F, m); 
+    cv::Mat M(4, 3, CV_64F, m);
     for (int i = 0; i < rx.size(); i++)
     {
-        Mat rvec; 
-        rvec = (Mat_<double>(3, 1) << rx[i], ry[i], rz[i]); 
+        cv::Mat rvec;
+        rvec = (cv::Mat_<double>(3, 1) << rx[i], ry[i], rz[i]);
         rvec *= angle; 
 
-        Mat tvec; 
+        cv::Mat tvec;
         four_point_get_M(k1, k2, k3, x1, y1, x2, y2, rx[i], ry[i], rz[i], m); 
-        SVD::solveZ(M, tvec); 
+        cv::SVD::solveZ(M, tvec);
 
         _rvecs.getMat().col(i * 2) = rvec * 1.0; 
         _tvecs.getMat().col(i * 2) = tvec * 1.0; 
@@ -327,11 +326,11 @@ CvFourPointEstimator::CvFourPointEstimator( double _angle )
 // to be of 1 row x n col x 2 channel. 
 int CvFourPointEstimator::runKernel( const CvMat* q1, const CvMat* q2, CvMat* _rvec_tvec )
 {
-	Mat Q1 = Mat(q1).reshape(1, q1->cols); 
-	Mat Q2 = Mat(q2).reshape(1, q2->cols); 
+    cv::Mat Q1 = cv::Mat(q1).reshape(1, q1->cols);
+    cv::Mat Q2 = cv::Mat(q2).reshape(1, q2->cols);
 
-    Mat rvecs, tvecs; 
-    four_point_numerical(Q1, Q2, angle, 1.0, Point2d(0, 0), rvecs, tvecs); 
+    cv::Mat rvecs, tvecs;
+    four_point_numerical(Q1, Q2, angle, 1.0, cv::Point2d(0, 0), rvecs, tvecs);
     rvecs = rvecs.t(); 
     tvecs = tvecs.t(); 
     double * rt = _rvec_tvec->data.db; 
@@ -353,7 +352,7 @@ int CvFourPointEstimator::runKernel( const CvMat* q1, const CvMat* q2, CvMat* _r
 void CvFourPointEstimator::computeReprojError( const CvMat* m1, const CvMat* m2,
                                      const CvMat* model, CvMat* error )
 {
-    Mat X1(m1), X2(m2); 
+    cv::Mat X1(m1), X2(m2);
     int n = X1.cols; 
     X1 = X1.reshape(1, n); 
     X2 = X2.reshape(1, n); 
@@ -361,24 +360,24 @@ void CvFourPointEstimator::computeReprojError( const CvMat* m1, const CvMat* m2,
     X1.convertTo(X1, CV_64F); 
     X2.convertTo(X2, CV_64F); 
 
-    Mat rvec_tvec(model); 
-    Mat rvec = rvec_tvec.colRange(0, 3) * 1.0; 
-    Mat tvec = rvec_tvec.colRange(3, 6) * 1.0; 
+    cv::Mat rvec_tvec(model);
+    cv::Mat rvec = rvec_tvec.colRange(0, 3) * 1.0;
+    cv::Mat tvec = rvec_tvec.colRange(3, 6) * 1.0;
 
-    Mat rmat; 
+    cv::Mat rmat;
     Rodrigues(rvec, rmat); 
 
     double * t = tvec.ptr<double>(); 
-    Mat tskew = (Mat_<double>(3, 3) << 0, -t[2], t[1], t[2], 0, -t[0], -t[1], t[0], 0); 
+    cv::Mat tskew = (cv::Mat_<double>(3, 3) << 0, -t[2], t[1], t[2], 0, -t[0], -t[1], t[0], 0);
 
-    Mat E = tskew * rmat; 
+    cv::Mat E = tskew * rmat;
     for (int i = 0; i < n; i++)
     {
-        Mat x1 = (Mat_<double>(3, 1) << X1.at<double>(i, 0), X1.at<double>(i, 1), 1.0); 
-        Mat x2 = (Mat_<double>(3, 1) << X2.at<double>(i, 0), X2.at<double>(i, 1), 1.0); 
+        cv::Mat x1 = (cv::Mat_<double>(3, 1) << X1.at<double>(i, 0), X1.at<double>(i, 1), 1.0);
+        cv::Mat x2 = (cv::Mat_<double>(3, 1) << X2.at<double>(i, 0), X2.at<double>(i, 1), 1.0);
         double x2tEx1 = x2.dot(E * x1); 
-        Mat Ex1 = E * x1; 
-        Mat Etx2 = E * x2; 
+        cv::Mat Ex1 = E * x1;
+        cv::Mat Etx2 = E * x2;
         double a = Ex1.at<double>(0) * Ex1.at<double>(0); 
         double b = Ex1.at<double>(1) * Ex1.at<double>(1); 
         double c = Etx2.at<double>(0) * Etx2.at<double>(0); 
@@ -393,9 +392,9 @@ void CvFourPointEstimator::computeReprojError( const CvMat* m1, const CvMat* m2,
 void findPose4pt_numerical(cv::InputArray _points1, cv::InputArray _points2, 
               double angle, double focal, cv::Point2d pp, 
               cv::OutputArray _rvecs, cv::OutputArray _tvecs, 
-              int method, double prob, double threshold, OutputArray _mask) 
+              int method, double prob, double threshold, cv::OutputArray _mask)
 {
-	Mat points1, points2; 
+    cv::Mat points1, points2;
 	_points1.getMat().copyTo(points1); 
 	_points2.getMat().copyTo(points2); 
 
@@ -420,7 +419,7 @@ void findPose4pt_numerical(cv::InputArray _points1, cv::InputArray _points2,
 	points1 = points1.reshape(2, 1); 
 	points2 = points2.reshape(2, 1); 
 
-	Mat rvec_tvec(1, 6, CV_64F); 
+    cv::Mat rvec_tvec(1, 6, CV_64F);
     CvFourPointEstimator estimator(angle); 
 
 	CvMat p1 = points1; 
@@ -434,7 +433,7 @@ void findPose4pt_numerical(cv::InputArray _points1, cv::InputArray _points2,
     if (npoints == 4)
     {
         four_point_numerical(_points1, _points2, angle, focal, pp, _rvecs, _tvecs); 
-        Mat(tempMask).setTo(true); 
+        cv::Mat(tempMask).setTo(true);
     }
     else 
     {
@@ -450,8 +449,8 @@ void findPose4pt_numerical(cv::InputArray _points1, cv::InputArray _points2,
         if (_mask.needed())
         {
         	_mask.create(1, npoints, CV_8U, -1, true); 
-        	Mat mask = _mask.getMat(); 
-        	Mat(tempMask).copyTo(mask); 
+            cv::Mat mask = _mask.getMat();
+            cv::Mat(tempMask).copyTo(mask);
         }
     
 
@@ -466,9 +465,9 @@ void findPose4pt_numerical(cv::InputArray _points1, cv::InputArray _points2,
             _rvecs.getMat().col(1) = rvec_tvec.colRange(0, 3).t() * 1.0; 
             _tvecs.getMat().col(1) = -rvec_tvec.colRange(3, 6).t() * 1.0; 
     
-            Mat rvec = rvec_tvec.colRange(0, 3).t() * 1.0; 
-            Mat tvec = rvec_tvec.colRange(3, 6).t() * 1.0; 
-            Mat rmat1, rmat2; 
+            cv::Mat rvec = rvec_tvec.colRange(0, 3).t() * 1.0;
+            cv::Mat tvec = rvec_tvec.colRange(3, 6).t() * 1.0;
+            cv::Mat rmat1, rmat2;
             Rodrigues(rvec, rmat1); 
             Rodrigues(-rvec, rmat2); 
             tvec = rmat2 * rmat1.t() * tvec; 

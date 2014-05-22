@@ -29,7 +29,6 @@
 #include "_modelest.h"
 #include "one-point.hpp"
 
-using namespace cv; 
 
 
 
@@ -84,7 +83,7 @@ int CvOnePointEstimator::runKernel( const CvMat* q1, const CvMat* q2, CvMat* _th
 void CvOnePointEstimator::computeReprojError( const CvMat* m1, const CvMat* m2,
                                      const CvMat* model, CvMat* error )
 {
-    Mat X1(m1), X2(m2); 
+    cv::Mat X1(m1), X2(m2);
     int n = X1.cols; 
     X1 = X1.reshape(1, n); 
     X2 = X2.reshape(1, n); 
@@ -95,16 +94,16 @@ void CvOnePointEstimator::computeReprojError( const CvMat* m1, const CvMat* m2,
     double theta = model->data.db[0]; 
 
     // Note this E is for image normal camera system, not the system in 1-pt paper
-    Mat E = (Mat_<double>(3, 3) << 0, -cos(theta * 0.5), 0, 
+    cv::Mat E = (cv::Mat_<double>(3, 3) << 0, -cos(theta * 0.5), 0,
                                    cos(theta * 0.5), 0, -sin(theta * 0.5), 
                                    0, -sin(theta * 0.5), 0); 
     for (int i = 0; i < n; i++)
     {
-        Mat x1 = (Mat_<double>(3, 1) << X1.at<double>(i, 0), X1.at<double>(i, 1), 1.0); 
-        Mat x2 = (Mat_<double>(3, 1) << X2.at<double>(i, 0), X2.at<double>(i, 1), 1.0); 
+        cv::Mat x1 = (cv::Mat_<double>(3, 1) << X1.at<double>(i, 0), X1.at<double>(i, 1), 1.0);
+        cv::Mat x2 = (cv::Mat_<double>(3, 1) << X2.at<double>(i, 0), X2.at<double>(i, 1), 1.0);
         double x2tEx1 = x2.dot(E * x1); 
-        Mat Ex1 = E * x1; 
-        Mat Etx2 = E * x2; 
+        cv::Mat Ex1 = E * x1;
+        cv::Mat Etx2 = E * x2;
         double a = Ex1.at<double>(0) * Ex1.at<double>(0); 
         double b = Ex1.at<double>(1) * Ex1.at<double>(1); 
         double c = Etx2.at<double>(0) * Etx2.at<double>(0); 
@@ -119,9 +118,9 @@ void CvOnePointEstimator::computeReprojError( const CvMat* m1, const CvMat* m2,
 void findPose1pt(cv::InputArray _points1, cv::InputArray _points2, 
               double focal, cv::Point2d pp, 
               cv::OutputArray _rvec, cv::OutputArray _tvec, 
-              int method, double prob, double threshold, OutputArray _mask) 
+              int method, double prob, double threshold, cv::OutputArray _mask)
 {
-	Mat points1, points2; 
+    cv::Mat points1, points2;
 	_points1.getMat().copyTo(points1); 
 	_points2.getMat().copyTo(points2); 
 
@@ -147,7 +146,7 @@ void findPose1pt(cv::InputArray _points1, cv::InputArray _points2,
 	points2 = points2.reshape(2, 1); 
 
     CvOnePointEstimator estimator; 
-    Mat theta(1, 1, CV_64F); 
+    cv::Mat theta(1, 1, CV_64F);
 
 	CvMat p1 = points1; 
 	CvMat p2 = points2; 
@@ -168,8 +167,8 @@ void findPose1pt(cv::InputArray _points1, cv::InputArray _points2,
     if (_mask.needed())
     {
     	_mask.create(1, npoints, CV_8U, -1, true); 
-    	Mat mask = _mask.getMat(); 
-    	Mat(tempMask).copyTo(mask); 
+        cv::Mat mask = _mask.getMat();
+        cv::Mat(tempMask).copyTo(mask);
     }
 
 
@@ -177,10 +176,10 @@ void findPose1pt(cv::InputArray _points1, cv::InputArray _points2,
     _tvec.create(3, 2, CV_64F, -1, true); 
 
     double t = theta.at<double>(0); 
-    Mat rvec = (Mat_<double>(3, 2) << 0, 0, 
+    cv::Mat rvec = (cv::Mat_<double>(3, 2) << 0, 0,
                                      -t, -t, 
                                       0, 0); 
-    Mat tvec = (Mat_<double>(3, 2) << -sin(t / 2.0), sin(t / 2.0),
+    cv::Mat tvec = (cv::Mat_<double>(3, 2) << -sin(t / 2.0), sin(t / 2.0),
                                                   0, 0, 
                                        cos(t / 2.0), -cos(t / 2.0)); 
     

@@ -1,6 +1,8 @@
 Relative Pose Estimation Package
 ==========
 
+
+
 This package contains some widely used relative pose estimation algorithm, which include the following algorithm. APIs of the algorithms all follows OpenCV data type. In addition, the RANSAC framework code is from OpenCV library. These algorithms accept feature point correspondences detected from images. This is the same with the well-known OpenCV function `cv::findFundamentalMat()`. Meanwhile, focal length and principle point (pp) have to be also passed to the functions. 
 
 The four-point algorithm is related with this paper: 

@@ -31,7 +31,6 @@
 #include <iostream>
 #include <complex>
 
-using namespace cv; 
 using namespace std; 
 
 class CvEMEstimator : public CvModelEstimator2
@@ -50,10 +49,10 @@ public:
 
 
 // Input should be a vector of n 2D points or a Nx2 matrix
-Mat findEssentialMat( InputArray _points1, InputArray _points2, double focal, Point2d pp, 
-					int method, double prob, double threshold, OutputArray _mask) 
+cv::Mat findEssentialMat( cv::InputArray _points1, cv::InputArray _points2, double focal, cv::Point2d pp,
+                    int method, double prob, double threshold, cv::OutputArray _mask)
 {
-	Mat points1, points2; 
+    cv::Mat points1, points2;
 	_points1.getMat().copyTo(points1); 
 	_points2.getMat().copyTo(points2); 
 
@@ -78,7 +77,7 @@ Mat findEssentialMat( InputArray _points1, InputArray _points2, double focal, Po
 	points1 = points1.reshape(2, 1); 
 	points2 = points2.reshape(2, 1); 
 
-	Mat E(3, 3, CV_64F); 
+    cv::Mat E(3, 3, CV_64F);
 	CvEMEstimator estimator; 
 
 	CvMat p1 = points1; 
@@ -95,7 +94,7 @@ Mat findEssentialMat( InputArray _points1, InputArray _points2, double focal, Po
         _E = E; 
         count = estimator.runKernel(&p1, &p2, &_E); 
         E = E.rowRange(0, 3 * count) * 1.0; 
-        Mat(tempMask).setTo(true); 
+        cv::Mat(tempMask).setTo(true);
     }
     else if (method == CV_RANSAC)
 	{
@@ -108,8 +107,8 @@ Mat findEssentialMat( InputArray _points1, InputArray _points2, double focal, Po
     if (_mask.needed())
     {
     	_mask.create(1, npoints, CV_8U, -1, true); 
-    	Mat mask = _mask.getMat(); 
-    	Mat(tempMask).copyTo(mask); 
+        cv::Mat mask = _mask.getMat();
+        cv::Mat(tempMask).copyTo(mask);
     }
 
 
@@ -117,11 +116,11 @@ Mat findEssentialMat( InputArray _points1, InputArray _points2, double focal, Po
 
 }
 
-int recoverPose( const Mat & E, InputArray _points1, InputArray _points2, Mat & _R, Mat & _t, 
-					double focal, Point2d pp, 
-					InputOutputArray _mask) 
+int recoverPose( const cv::Mat & E, cv::InputArray _points1, cv::InputArray _points2, cv::Mat & _R, cv::Mat & _t,
+                    double focal, cv::Point2d pp,
+                    cv::InputOutputArray _mask)
 {
-	Mat points1, points2; 
+    cv::Mat points1, points2;
 	_points1.getMat().copyTo(points1); 
 	_points2.getMat().copyTo(points2); 
 	int npoints = points1.checkVector(2);
@@ -144,23 +143,23 @@ int recoverPose( const Mat & E, InputArray _points1, InputArray _points2, Mat & 
 	points1 = points1.t(); 
 	points2 = points2.t(); 
 	
-	Mat R1, R2, t; 
+    cv::Mat R1, R2, t;
 	decomposeEssentialMat(E, R1, R2, t); 
-	Mat P0 = Mat::eye(3, 4, R1.type()); 
-	Mat P1(3, 4, R1.type()), P2(3, 4, R1.type()), P3(3, 4, R1.type()), P4(3, 4, R1.type()); 
-	P1(Range::all(), Range(0, 3)) = R1 * 1.0; P1.col(3) = t * 1.0; 
-	P2(Range::all(), Range(0, 3)) = R2 * 1.0; P2.col(3) = t * 1.0; 
-	P3(Range::all(), Range(0, 3)) = R1 * 1.0; P3.col(3) = -t * 1.0; 
-	P4(Range::all(), Range(0, 3)) = R2 * 1.0; P4.col(3) = -t * 1.0; 
+    cv::Mat P0 = cv::Mat::eye(3, 4, R1.type());
+    cv::Mat P1(3, 4, R1.type()), P2(3, 4, R1.type()), P3(3, 4, R1.type()), P4(3, 4, R1.type());
+    P1(cv::Range::all(), cv::Range(0, 3)) = R1 * 1.0; P1.col(3) = t * 1.0;
+    P2(cv::Range::all(), cv::Range(0, 3)) = R2 * 1.0; P2.col(3) = t * 1.0;
+    P3(cv::Range::all(), cv::Range(0, 3)) = R1 * 1.0; P3.col(3) = -t * 1.0;
+    P4(cv::Range::all(), cv::Range(0, 3)) = R2 * 1.0; P4.col(3) = -t * 1.0;
 
 	// Do the cheirality check. 
 	// Notice here a threshold dist is used to filter
 	// out far away points (i.e. infinite points) since 
 	// there depth may vary between postive and negtive. 
 	double dist = 50.0; 
-	Mat Q; 
+    cv::Mat Q;
 	triangulatePoints(P0, P1, points1, points2, Q); 
-	Mat mask1 = Q.row(2).mul(Q.row(3)) > 0; 
+    cv::Mat mask1 = Q.row(2).mul(Q.row(3)) > 0;
 	Q.row(0) /= Q.row(3); 
 	Q.row(1) /= Q.row(3); 
 	Q.row(2) /= Q.row(3); 
@@ -171,7 +170,7 @@ int recoverPose( const Mat & E, InputArray _points1, InputArray _points2, Mat & 
 	mask1 = (Q.row(2) < dist) & mask1; 
 
 	triangulatePoints(P0, P2, points1, points2, Q); 
-	Mat mask2 = Q.row(2).mul(Q.row(3)) > 0; 
+    cv::Mat mask2 = Q.row(2).mul(Q.row(3)) > 0;
 	Q.row(0) /= Q.row(3); 
 	Q.row(1) /= Q.row(3); 
 	Q.row(2) /= Q.row(3); 
@@ -182,7 +181,7 @@ int recoverPose( const Mat & E, InputArray _points1, InputArray _points2, Mat & 
 	mask2 = (Q.row(2) < dist) & mask2; 
 
 	triangulatePoints(P0, P3, points1, points2, Q); 
-	Mat mask3 = Q.row(2).mul(Q.row(3)) > 0; 
+    cv::Mat mask3 = Q.row(2).mul(Q.row(3)) > 0;
 	Q.row(0) /= Q.row(3); 
 	Q.row(1) /= Q.row(3); 
 	Q.row(2) /= Q.row(3); 
@@ -193,7 +192,7 @@ int recoverPose( const Mat & E, InputArray _points1, InputArray _points2, Mat & 
 	mask3 = (Q.row(2) < dist) & mask3; 
 
 	triangulatePoints(P0, P4, points1, points2, Q); 
-	Mat mask4 = Q.row(2).mul(Q.row(3)) > 0; 
+    cv::Mat mask4 = Q.row(2).mul(Q.row(3)) > 0;
 	Q.row(0) /= Q.row(3); 
 	Q.row(1) /= Q.row(3); 
 	Q.row(2) /= Q.row(3); 
@@ -206,7 +205,7 @@ int recoverPose( const Mat & E, InputArray _points1, InputArray _points2, Mat & 
 	// If _mask is given, then use it to filter outliers. 
     if (!_mask.empty())
     {
-		Mat mask = _mask.getMat();         
+        cv::Mat mask = _mask.getMat();
         CV_Assert(mask.size() == mask1.size()); 
 		bitwise_and(mask, mask1, mask1); 
 		bitwise_and(mask, mask2, mask2); 
@@ -251,14 +250,14 @@ int recoverPose( const Mat & E, InputArray _points1, InputArray _points2, Mat & 
 
 
 
-void decomposeEssentialMat( const Mat & E, Mat & R1, Mat & R2, Mat & t ) 
+void decomposeEssentialMat( const cv::Mat & E, cv::Mat & R1, cv::Mat & R2, cv::Mat & t )
 {
 	assert(E.cols == 3 && E.rows == 3); 
-	Mat D, U, Vt; 
-	SVD::compute(E, D, U, Vt); 
+    cv::Mat D, U, Vt;
+    cv::SVD::compute(E, D, U, Vt);
 	if (determinant(U) < 0) U = -U; 
 	if (determinant(Vt) < 0) Vt = -Vt; 
-	Mat W = (Mat_<double>(3, 3) << 0, 1, 0, -1, 0, 0, 0, 0, 1); 
+    cv::Mat W = (cv::Mat_<double>(3, 3) << 0, 1, 0, -1, 0, 0, 0, 0, 1);
 	W.convertTo(W, E.type()); 
 	R1 = U * W * Vt; 
 	R2 = U * W.t() * Vt; 
@@ -280,11 +279,11 @@ int CvEMEstimator::runKernel( const CvMat* m1, const CvMat* m2, CvMat* model )
 // to be of 1 row x n col x 2 channel. 
 int CvEMEstimator::run5Point( const CvMat* q1, const CvMat* q2, CvMat* ematrix )
 {
-	Mat Q1 = Mat(q1).reshape(1, q1->cols); 
-	Mat Q2 = Mat(q2).reshape(1, q2->cols); 
+    cv::Mat Q1 = cv::Mat(q1).reshape(1, q1->cols);
+    cv::Mat Q2 = cv::Mat(q2).reshape(1, q2->cols);
 
 	int n = Q1.rows; 
-	Mat Q(n, 9, CV_64F); 
+    cv::Mat Q(n, 9, CV_64F);
 	Q.col(0) = Q1.col(0).mul( Q2.col(0) ); 
 	Q.col(1) = Q1.col(1).mul( Q2.col(0) ); 
 	Q.col(2) = Q2.col(0) * 1.0; 
@@ -295,11 +294,11 @@ int CvEMEstimator::run5Point( const CvMat* q1, const CvMat* q2, CvMat* ematrix )
 	Q.col(7) = Q1.col(1) * 1.0; 
 	Q.col(8) = 1.0; 
 
-    Mat U, W, Vt; 
-    SVD::compute(Q, W, U, Vt, SVD::MODIFY_A | SVD::FULL_UV); 
+    cv::Mat U, W, Vt;
+    cv::SVD::compute(Q, W, U, Vt, cv::SVD::MODIFY_A | cv::SVD::FULL_UV);
     
-    Mat EE = Mat(Vt.t()).colRange(5, 9) * 1.0; 
-    Mat A(10, 20, CV_64F); 
+    cv::Mat EE = cv::Mat(Vt.t()).colRange(5, 9) * 1.0;
+    cv::Mat A(10, 20, CV_64F);
     EE = EE.t(); 
 	getCoeffMat((double*)EE.data, (double*)A.data); 
     EE = EE.t(); 
@@ -307,13 +306,13 @@ int CvEMEstimator::run5Point( const CvMat* q1, const CvMat* q2, CvMat* ematrix )
 	A = A.colRange(0, 10).inv() * A.colRange(10, 20); 
     
     double b[3 * 13]; 
-    Mat B(3, 13, CV_64F, b); 
+    cv::Mat B(3, 13, CV_64F, b);
     for (int i = 0; i < 3; i++)
     {
-        Mat arow1 = A.row(i * 2 + 4) * 1.0; 
-        Mat arow2 = A.row(i * 2 + 5) * 1.0; 
-        Mat row1(1, 13, CV_64F, Scalar(0.0)); 
-        Mat row2(1, 13, CV_64F, Scalar(0.0)); 
+        cv::Mat arow1 = A.row(i * 2 + 4) * 1.0;
+        cv::Mat arow2 = A.row(i * 2 + 5) * 1.0;
+        cv::Mat row1(1, 13, CV_64F, cv::Scalar(0.0));
+        cv::Mat row2(1, 13, CV_64F, cv::Scalar(0.0));
 
         row1.colRange(1, 4) = arow1.colRange(0, 3) * 1.0; 
         row1.colRange(5, 8) = arow1.colRange(3, 6) * 1.0; 
@@ -327,7 +326,7 @@ int CvEMEstimator::run5Point( const CvMat* q1, const CvMat* q2, CvMat* ematrix )
     }
 
     double c[11]; 
-    Mat coeffs(1, 11, CV_64F, c); 
+    cv::Mat coeffs(1, 11, CV_64F, c);
     c[10] = (b[0]*b[17]*b[34]+b[26]*b[4]*b[21]-b[26]*b[17]*b[8]-b[13]*b[4]*b[34]-b[0]*b[21]*b[30]+b[13]*b[30]*b[8]); 
     c[9] = (b[26]*b[4]*b[22]+b[14]*b[30]*b[8]+b[13]*b[31]*b[8]+b[1]*b[17]*b[34]-b[13]*b[5]*b[34]+b[26]*b[5]*b[21]-b[0]*b[21]*b[31]-b[26]*b[17]*b[9]-b[1]*b[21]*b[30]+b[27]*b[4]*b[21]+b[0]*b[17]*b[35]-b[0]*b[22]*b[30]+b[13]*b[30]*b[9]+b[0]*b[18]*b[34]-b[27]*b[17]*b[8]-b[14]*b[4]*b[34]-b[13]*b[4]*b[35]-b[26]*b[18]*b[8]); 
     c[8] = (b[14]*b[30]*b[9]+b[14]*b[31]*b[8]+b[13]*b[31]*b[9]-b[13]*b[4]*b[36]-b[13]*b[5]*b[35]+b[15]*b[30]*b[8]-b[13]*b[6]*b[34]+b[13]*b[30]*b[10]+b[13]*b[32]*b[8]-b[14]*b[4]*b[35]-b[14]*b[5]*b[34]+b[26]*b[4]*b[23]+b[26]*b[5]*b[22]+b[26]*b[6]*b[21]-b[26]*b[17]*b[10]-b[15]*b[4]*b[34]-b[26]*b[18]*b[9]-b[26]*b[19]*b[8]+b[27]*b[4]*b[22]+b[27]*b[5]*b[21]-b[27]*b[17]*b[9]-b[27]*b[18]*b[8]-b[1]*b[21]*b[31]-b[0]*b[23]*b[30]-b[0]*b[21]*b[32]+b[28]*b[4]*b[21]-b[28]*b[17]*b[8]+b[2]*b[17]*b[34]+b[0]*b[18]*b[35]-b[0]*b[22]*b[31]+b[0]*b[17]*b[36]+b[0]*b[19]*b[34]-b[1]*b[22]*b[30]+b[1]*b[18]*b[34]+b[1]*b[17]*b[35]-b[2]*b[21]*b[30]); 
@@ -363,9 +362,9 @@ int CvEMEstimator::run5Point( const CvMat* q1, const CvMat* q2, CvMat* ematrix )
             bz[j][2] = br[8] * z4 + br[9] * z3 + br[10] * z2 + br[11] * z1 + br[12]; 
         }
 
-        Mat Bz(3, 3, CV_64F, bz); 
+        cv::Mat Bz(3, 3, CV_64F, bz);
         cv::Mat xy1; 
-        SVD::solveZ(Bz, xy1); 
+        cv::SVD::solveZ(Bz, xy1);
 
         if (fabs(xy1.at<double>(2)) < 1e-10) continue; 
         xs.push_back(xy1.at<double>(0) / xy1.at<double>(2)); 
@@ -389,7 +388,7 @@ int CvEMEstimator::run5Point( const CvMat* q1, const CvMat* q2, CvMat* ematrix )
 void CvEMEstimator::computeReprojError( const CvMat* m1, const CvMat* m2,
                                      const CvMat* model, CvMat* error )
 {
-    Mat X1(m1), X2(m2); 
+    cv::Mat X1(m1), X2(m2);
     int n = X1.cols; 
     X1 = X1.reshape(1, n); 
     X2 = X2.reshape(1, n); 
@@ -397,14 +396,14 @@ void CvEMEstimator::computeReprojError( const CvMat* m1, const CvMat* m2,
     X1.convertTo(X1, CV_64F); 
     X2.convertTo(X2, CV_64F); 
 
-    Mat E(model); 
+    cv::Mat E(model);
     for (int i = 0; i < n; i++)
     {
-        Mat x1 = (Mat_<double>(3, 1) << X1.at<double>(i, 0), X1.at<double>(i, 1), 1.0); 
-        Mat x2 = (Mat_<double>(3, 1) << X2.at<double>(i, 0), X2.at<double>(i, 1), 1.0); 
+        cv::Mat x1 = (cv::Mat_<double>(3, 1) << X1.at<double>(i, 0), X1.at<double>(i, 1), 1.0);
+        cv::Mat x2 = (cv::Mat_<double>(3, 1) << X2.at<double>(i, 0), X2.at<double>(i, 1), 1.0);
         double x2tEx1 = x2.dot(E * x1); 
-        Mat Ex1 = E * x1; 
-        Mat Etx2 = E * x2; 
+        cv::Mat Ex1 = E * x1;
+        cv::Mat Etx2 = E * x2;
         double a = Ex1.at<double>(0) * Ex1.at<double>(0); 
         double b = Ex1.at<double>(1) * Ex1.at<double>(1); 
         double c = Etx2.at<double>(0) * Etx2.at<double>(0); 
